@@ -67,11 +67,21 @@ namespace router {
              *  Check whether the path matches the given input
              *
              *  @param  input   The input to test
-             *  @param  slugs   Output vector to be filled with slug data
+             *  @param  vars    The variables to fill
              *  @return Whether the input matches the path
              */
-            bool match(std::string_view input, std::vector<std::string_view>& slugs) const
+            template <typename variables>
+            bool match(std::string_view input, variables& vars) const
             {
+                // check that the number of variables matches the number of slugs
+                if (variables::dto::size() != _edges.size()) {
+                    // cannot parse variables since the number of slugs is incorrect
+                    throw std::invalid_argument{ "Unable to parse variables: slug count mismatch" };
+                }
+
+                // array with raw slug data to process later
+                std::array<std::string_view, variables::dto::size()> slugs;
+
                 // first we check whether the input correctly begins with the prefix
                 if (input.substr(0, _prefix.size()) != _prefix) {
                     // input does not start with the prefix
@@ -81,16 +91,14 @@ namespace router {
                 // remove the prefix from the input
                 input.remove_prefix(_prefix.size());
 
-                // allocate memory for the matched slug data
-                slugs.reserve(_edges.size());
-
                 // go over all the edges
-                for (auto& [slug, suffix] : _edges) {
-                    // capture the slug data
-                    std::string_view output;
+                for (std::size_t i = 0; i < _edges.size(); ++i) {
+                    // get the slug and suffix
+                    auto& slug      = _edges[i].first;
+                    auto& suffix    = _edges[i].second;
 
                     // check the slug
-                    if (!slug.match(input, output)) {
+                    if (!slug.match(input, slugs[i])) {
                         // the slug failed to match
                         return false;
                     }
@@ -104,10 +112,10 @@ namespace router {
 
                     // remove the suffix from the input
                     input.remove_prefix(suffix.size());
-
-                    // add the slug data to the result
-                    slugs.push_back(output);
                 }
+
+                // process the variable data
+                variables::dto::to_dto(slugs, vars);
 
                 // prefix and all sludges matched
                 return true;
