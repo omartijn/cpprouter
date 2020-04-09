@@ -58,8 +58,14 @@ namespace router {
          *  @param  slugs   The slug data to parse
          *  @param  output  The object to fill
          */
-        static void to_dto(const std::array<std::string_view, size()>& slugs, data_type& output)
+        static void to_dto(const std::vector<std::string_view>& slugs, data_type& output)
         {
+            // ensure the number of slugs is correct
+            if (slugs.size() != size()) {
+                // we cannot parse the data
+                throw std::logic_error{ "Cannot convert slugs to dto: slug count mismatch" };
+            }
+
             // iterator to use in the fold expression
             auto iter = begin(slugs);
 

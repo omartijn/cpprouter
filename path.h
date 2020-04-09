@@ -64,26 +64,42 @@ namespace router {
             }
 
             /**
+             *  Get the fixed prefix for this path
+             *
+             *  @return The fixed part, up to the first slug
+             */
+            const std::string_view prefix() const noexcept
+            {
+                return _prefix;
+            }
+
+            /**
+             *  Check whether the prefix matches the given input
+             *
+             *  @param  input   The input to test
+             *  @return Whether the prefix matches
+             */
+            bool match_prefix(std::string_view input) const noexcept
+            {
+                // check whether the input correctly begins with the prefix
+                return input.substr(0, _prefix.size()) == _prefix;
+            }
+
+            /**
              *  Check whether the path matches the given input
              *
              *  @param  input   The input to test
-             *  @param  vars    The variables to fill
+             *  @param  output  The matched slug data
              *  @return Whether the input matches the path
              */
-            template <typename variables>
-            bool match(std::string_view input, variables& vars) const
+            bool match(std::string_view input, std::vector<std::string_view>& output) const
             {
-                // check that the number of variables matches the number of slugs
-                if (variables::dto::size() != _edges.size()) {
-                    // cannot parse variables since the number of slugs is incorrect
-                    throw std::invalid_argument{ "Unable to parse variables: slug count mismatch" };
-                }
-
-                // array with raw slug data to process later
-                std::array<std::string_view, variables::dto::size()> slugs;
+                // clean the output and allocate memory
+                output.clear();
+                output.reserve(_edges.size());
 
                 // first we check whether the input correctly begins with the prefix
-                if (input.substr(0, _prefix.size()) != _prefix) {
+                if (!match_prefix(input)) {
                     // input does not start with the prefix
                     return false;
                 }
@@ -92,13 +108,12 @@ namespace router {
                 input.remove_prefix(_prefix.size());
 
                 // go over all the edges
-                for (std::size_t i = 0; i < _edges.size(); ++i) {
-                    // get the slug and suffix
-                    auto& slug      = _edges[i].first;
-                    auto& suffix    = _edges[i].second;
+                for (const auto& [slug, suffix] : _edges) {
+                    // the matched slug data
+                    std::string_view matched_data;
 
                     // check the slug
-                    if (!slug.match(input, slugs[i])) {
+                    if (!slug.match(input, matched_data)) {
                         // the slug failed to match
                         return false;
                     }
@@ -110,12 +125,10 @@ namespace router {
                         return false;
                     }
 
-                    // remove the suffix from the input
+                    // remove the suffix from the input and store the matched data
                     input.remove_prefix(suffix.size());
+                    output.push_back(matched_data);
                 }
-
-                // process the variable data
-                variables::dto::to_dto(slugs, vars);
 
                 // prefix and all sludges matched
                 return true;
