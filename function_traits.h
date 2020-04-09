@@ -17,8 +17,10 @@ namespace router {
     template <typename R, typename... Args>
     struct function_traits<R(*)(Args...)>
     {
-        using return_type   = R;
-        using argument_type = std::tuple<Args...>;
+        constexpr static bool           is_member_function  = false;
+        constexpr static std::size_t    arity               = sizeof...(Args);
+        using                           return_type         = R;
+        using                           argument_type       = std::tuple<Args...>;
     };
 
     /**
@@ -27,9 +29,11 @@ namespace router {
     template <typename R, typename... Args, typename X>
     struct function_traits<R(X::*)(Args...)>
     {
-        using member_type   = X;
-        using return_type   = R;
-        using argument_type = std::tuple<Args...>;
+        constexpr static bool           is_member_function  = true;
+        constexpr static std::size_t    arity               = sizeof...(Args);
+        using                           member_type         = X;
+        using                           return_type         = R;
+        using                           argument_type       = std::tuple<Args...>;
     };
 
 }

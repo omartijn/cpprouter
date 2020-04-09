@@ -123,17 +123,31 @@ namespace router {
                 constexpr std::size_t arity = sizeof...(arguments);
 
                 // traits for the callback function, and the data type used for the variables
-                using traits        = function_traits<decltype(callback)>;
-                using variable_type = std::remove_reference_t<std::tuple_element_t<arity, typename traits::argument_type>>;
+                using traits = function_traits<decltype(callback)>;
 
-                // create the variables to be filled and try to match the target
-                variable_type   variables{};
+                // does the callback require slug parsing?
+                if constexpr (traits::arity == arity) {
+                    // it does not, we can invoke the callback directly
+                    return callback(std::forward<arguments>(parameters)...);
+                } else if constexpr (traits::arity == arity + 1) {
+                    // determine the type used for the slug data, this comes as the optional
+                    // last parameter the function may take, elements are zero-based
+                    using variable_type = std::remove_reference_t<std::tuple_element_t<arity, typename traits::argument_type>>;
 
-                // parse the variables
-                variable_type::dto::to_dto(slugs, variables);
+                    // create the variables to be filled and try to match the target
+                    variable_type   variables{};
 
-                // invoke the wrapped callback and return the result
-                return callback(std::forward<arguments>(parameters)..., std::move(variables));
+                    // parse the variables
+                    variable_type::dto::to_dto(slugs, variables);
+
+                    // invoke the wrapped callback and return the result
+                    return callback(std::forward<arguments>(parameters)..., std::move(variables));
+                } else {
+                    // the number parameters the function requires is incorrect
+                    // note: the comparison is required to prevent static_assert
+                    // from being overly trigger-happy
+                    static_assert(traits::arity == arity, "Callback function unusable, incorrect arity");
+                }
             }
 
             std::vector<entry>  _prefixed_paths;    // a sorted list of paths with prefixes
