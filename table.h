@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <tuple>
 #include "path.h"
 #include "function_traits.h"
 
@@ -30,26 +31,27 @@ namespace router {
              *  @param  endpoint    The path to add
              */
             template <auto callback>
-            void add(std::string_view endpoint)
+            std::enable_if_t<!std::is_member_function_pointer_v<decltype(callback)>>
+            add(std::string_view endpoint)
             {
-                // create the path to route
-                path    path    { endpoint  };
+                // add the endpoint using the wrapped callback, since
+                // the callback is not a member functio we need no instance
+                add(&table::wrap_callback<callback>, endpoint, nullptr);
+            }
 
-                // does the endpoint contain a fixed prefix?
-                if (path.prefix().empty()) {
-                    // there is no prefix to sort on so
-                    // we add this to the unsorted list
-                    _unsorted_paths.emplace_back(std::move(path), &table::wrap_callback<callback>);
-                } else {
-                    // find the element to insert before
-                    auto iter = std::lower_bound(begin(_prefixed_paths), end(_prefixed_paths), path, [](const auto& a, const auto& b) {
-                        // endpoints are sorted by prefix
-                        return a.first.prefix() < b.prefix();
-                    });
-
-                    // add it to the sorted list before the found element
-                    _prefixed_paths.emplace(iter, std::move(path), &table::wrap_callback<callback>);
-                }
+            /**
+             *  Add an endpoint to the routing table
+             *
+             *  @tparam callback    The callback to route to
+             *  @param  endpoint    The path to add
+             *  @param  instance    The instance to invoke the callback on
+             */
+            template <auto callback>
+            std::enable_if_t<std::is_member_function_pointer_v<decltype(callback)>>
+            add(std::string_view endpoint, typename function_traits<decltype(callback)>::member_type* instance)
+            {
+                // add the endpoint using the wrapped callback
+                add(&table::wrap_callback<callback>, endpoint, instance);
             }
 
             /**
@@ -69,15 +71,24 @@ namespace router {
                 // find the first possibly matching entry by prefix
                 auto iter = std::lower_bound(begin(_prefixed_paths), end(_prefixed_paths), endpoint, [](const auto& a, const auto& b) {
                     // check whether the prefix comes before the given endpoint
-                    return a.first.prefix() < b.substr(0, a.first.prefix().size());
+                    return std::get<0>(a).prefix() < b.substr(0, std::get<0>(a).prefix().size());
                 });
 
                 // try all valid matches
-                while (iter != end(_prefixed_paths) && iter->first.match_prefix(endpoint)) {
+                while (iter != end(_prefixed_paths)) {
+                    // retrieve the path, callback and instance
+                    const auto& [path, callback, instance] = *iter;
+
+                    // if the prefix no longer matches we have exhausted all options
+                    if (!path.match_prefix(endpoint)) {
+                        // stop now to avoid expensive regex calls
+                        break;
+                    }
+
                     // try to match the path to the given endpoint
-                    if (iter->first.match(endpoint, slugs)) {
+                    if (path.match(endpoint, slugs)) {
                         // we matched the endpoint, invoke the callback
-                        return iter->second(slugs, std::forward<arguments>(parameters)...);
+                        return callback(slugs, instance, std::forward<arguments>(parameters)...);
                     }
 
                     // move on to the next entry
@@ -86,11 +97,11 @@ namespace router {
 
                 // none of the prefixed paths matched, so try the
                 // unsorted paths without a known prefix
-                for (const auto& [path, callback] : _unsorted_paths) {
+                for (const auto& [path, callback, instance] : _unsorted_paths) {
                     // try to match the path to the given endpoint
                     if (path.match(endpoint, slugs)) {
                         // we matched the endpoint, invoke the callback
-                        return callback(slugs, std::forward<arguments>(parameters)...);
+                        return callback(slugs, instance, std::forward<arguments>(parameters)...);
                     }
                 }
 
@@ -101,22 +112,23 @@ namespace router {
             /**
              *  Alias for a wrapped callback
              */
-            using wrapped_callback = return_type(*)(const std::vector<std::string_view>& slugs, arguments... parameters);
+            using wrapped_callback = return_type(*)(const std::vector<std::string_view>& slugs, void* instance, arguments... parameters);
 
             /**
              *  Alias for a routed path and the callback
              */
-            using entry = std::pair<path, wrapped_callback>;
+            using entry = std::tuple<path, wrapped_callback, void*>;
 
             /**
              *  Wrap a callback to create a uniform handler
              *
              *  @tparam callback    The callback to wrap
              *  @param  slugs       The slug data from the target
+             *  @param  instance    The instance to invoke the callback on
              *  @param  arguments   Additional arguments to pass to the callback
              */
             template <auto callback>
-            static return_type wrap_callback(const std::vector<std::string_view>& slugs, arguments... parameters)
+            static return_type wrap_callback(const std::vector<std::string_view>& slugs, void* instance, arguments... parameters)
             {
                 // the number of arguments our callback function takes
                 // ignoring the extra variable parameter it may take
@@ -127,8 +139,14 @@ namespace router {
 
                 // does the callback require slug parsing?
                 if constexpr (traits::arity == arity) {
-                    // it does not, we can invoke the callback directly
-                    return callback(std::forward<arguments>(parameters)...);
+                    // is it a member function?
+                    if constexpr (!traits::is_member_function) {
+                        // it is not, we can invoke the callback directly
+                        return callback(std::forward<arguments>(parameters)...);
+                    } else {
+                        // invoke the function on the given instance
+                        return (static_cast<typename traits::member_type*>(instance)->*callback)(std::forward<arguments>(parameters)...);
+                    }
                 } else if constexpr (traits::arity == arity + 1) {
                     // determine the type used for the slug data, this comes as the optional
                     // last parameter the function may take, elements are zero-based
@@ -140,13 +158,48 @@ namespace router {
                     // parse the variables
                     variable_type::dto::to_dto(slugs, variables);
 
-                    // invoke the wrapped callback and return the result
-                    return callback(std::forward<arguments>(parameters)..., std::move(variables));
+                    // is it a member function?
+                    if constexpr (!traits::is_member_function) {
+                        // invoke the wrapped callback and return the result
+                        return callback(std::forward<arguments>(parameters)..., std::move(variables));
+                    } else {
+                        // invoke the function on the given instance
+                        return (static_cast<typename traits::member_type*>(instance)->*callback)(std::forward<arguments>(parameters)..., std::move(variables));
+                    }
                 } else {
                     // the number parameters the function requires is incorrect
                     // note: the comparison is required to prevent static_assert
                     // from being overly trigger-happy
                     static_assert(traits::arity == arity, "Callback function unusable, incorrect arity");
+                }
+            }
+
+            /**
+             *  Add an endpoint to the routing table
+             *
+             *  @param  callback    The callback to route to
+             *  @param  endpoint    The path to add
+             *  @param  instance    The instance to invoke the callback on
+             */
+            void add(wrapped_callback callback, std::string_view endpoint, void* instance)
+            {
+                // create the path to route
+                path    path    { endpoint  };
+
+                // does the endpoint contain a fixed prefix?
+                if (path.prefix().empty()) {
+                    // there is no prefix to sort on so
+                    // we add this to the unsorted list
+                    _unsorted_paths.emplace_back(std::move(path), callback, instance);
+                } else {
+                    // find the element to insert before
+                    auto iter = std::lower_bound(begin(_prefixed_paths), end(_prefixed_paths), path, [](const auto& a, const auto& b) {
+                        // endpoints are sorted by prefix
+                        return std::get<0>(a).prefix() < b.prefix();
+                    });
+
+                    // add it to the sorted list before the found element
+                    _prefixed_paths.emplace(iter, std::move(path), callback, instance);
                 }
             }
 
