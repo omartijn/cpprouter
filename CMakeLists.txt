@@ -14,6 +14,21 @@ target_include_directories(router INTERFACE
     $<INSTALL_INTERFACE:include>
 )
 
+# msvc does not support normal options
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    # set warning level to 4
+    target_compile_options(router INTERFACE W4)
+else()
+	# include helper to enable only options which are supported
+	include(cmake/target_supported_compile_options.cmake)
+
+    # try all the regular options and enable them if possible
+    target_supported_compile_options(router INTERFACE -Wall)
+    target_supported_compile_options(router INTERFACE -Wextra)
+    target_supported_compile_options(router INTERFACE -Wdeprecated)
+    target_supported_compile_options(router INTERFACE -Wdocumentation)
+endif()
+
 install(
     DIRECTORY   include/router
     DESTINATION include

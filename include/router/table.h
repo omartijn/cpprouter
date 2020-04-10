@@ -59,7 +59,7 @@ namespace router {
              *  Route a request to one of the callbacks
              *
              *  @param  endpoint    The endpoint to route
-             *  @param  arguments   The arguments to give to the callback
+             *  @param  parameters  The arguments to give to the callback
              *  @return The result of the callback
              *  @throws std::out_of_range
              */
@@ -126,7 +126,7 @@ namespace router {
              *  @tparam callback    The callback to wrap
              *  @param  slugs       The slug data from the target
              *  @param  instance    The instance to invoke the callback on
-             *  @param  arguments   Additional arguments to pass to the callback
+             *  @param  parameters  Additional arguments to pass to the callback
              */
             template <auto callback>
             static return_type wrap_callback(const std::vector<std::string_view>& slugs, void* instance, arguments... parameters)
