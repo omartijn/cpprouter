@@ -2,10 +2,7 @@
 
 #include <string_view>
 #include <algorithm>
-#include <optional>
-#include <ostream>
 #include <vector>
-#include <memory>
 #include "slug.h"
 
 
