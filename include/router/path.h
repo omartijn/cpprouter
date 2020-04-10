@@ -65,7 +65,7 @@ namespace router {
              *
              *  @return The fixed part, up to the first slug
              */
-            const std::string_view prefix() const noexcept
+            std::string_view prefix() const noexcept
             {
                 return _prefix;
             }
@@ -127,8 +127,10 @@ namespace router {
                     output.push_back(matched_data);
                 }
 
-                // prefix and all sludges matched
-                return true;
+                // prefix and all sludges matched, this should have
+                // consumed all data, otherwise there is unmatched
+                // trailing input
+                return input.empty();
             }
         private:
             /**

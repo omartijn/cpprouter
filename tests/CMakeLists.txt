@@ -1,5 +1,7 @@
 set(test-sources
     main.cpp
+    path.cpp
+    table.cpp
 )
 
 add_executable(test ${test-sources})
