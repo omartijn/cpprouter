@@ -94,9 +94,12 @@ namespace router {
              */
             bool match(std::string_view& input, std::string_view& output) const
             {
+                // the match results to use
+                using match_results = std::match_results<std::string_view::const_iterator>;
+
                 // search the input and get the results
-                std::cmatch matches {                                                                   };
-                bool        matched { std::regex_search(begin(input), end(input), matches, _pattern)    };
+                match_results   matches {                                                                   };
+                bool            matched { std::regex_search(begin(input), end(input), matches, _pattern)    };
 
                 // did we find a match and did it occur at the start of the input?
                 if (matched && matches.position(0) == 0) {

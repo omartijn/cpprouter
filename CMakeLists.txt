@@ -17,7 +17,7 @@ target_include_directories(router INTERFACE
 # msvc does not support normal options
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     # set warning level to 4
-    target_compile_options(router INTERFACE W4)
+    target_compile_options(router INTERFACE /W4)
 else()
 	# include helper to enable only options which are supported
 	include(cmake/target_supported_compile_options.cmake)
