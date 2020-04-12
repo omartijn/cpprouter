@@ -1,0 +1,21 @@
+name: windows-latest
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    - name: cmake
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=/usr/bin/clang++
+    - name: build
+      run: cmake --build build
+    - name: test
+      run: .\build\tests\Debug\test.exe
