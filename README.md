@@ -1,6 +1,10 @@
 # cpprouter
 A modern, header-only request router for C++
 
+![](https://github.com/omartijn/cpprouter/workflows/ubuntu-latest/badge.svg)
+![](https://github.com/omartijn/cpprouter/workflows/macos-latest/badge.svg)
+![](https://github.com/omartijn/cpprouter/workflows/windows-latest/badge.svg)
+
 ## Routing requests
 
 This library is designed to route requests to an associated callback. Requests are matched
