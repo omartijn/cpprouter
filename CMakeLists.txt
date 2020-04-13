@@ -14,6 +14,13 @@ target_include_directories(router INTERFACE
     $<INSTALL_INTERFACE:include>
 )
 
+set(ROUTER_MASTER_PROJECT OFF)
+if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    set(ROUTER_MASTER_PROJECT ON)
+endif()
+
+option(ROUTER_TEST "Build the tests" ${ROUTER_MASTER_PROJECT})
+
 # msvc does not support normal options
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     # set warning level to 4
@@ -77,4 +84,6 @@ install(
         lib/cmake/router
 )
 
-add_subdirectory(tests)
+if (ROUTER_TEST)
+    add_subdirectory(tests)
+endif()
