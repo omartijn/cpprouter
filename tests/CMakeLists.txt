@@ -1,6 +1,7 @@
 set(test-sources
     main.cpp
     path.cpp
+    slug.cpp
     table.cpp
 )
 
