@@ -56,6 +56,35 @@ namespace router {
             }
 
             /**
+             *  Set a handler for endpoints that are not found
+             *
+             *  @tparam callback    The callback to route to
+             */
+            template <auto callback>
+            std::enable_if_t<!std::is_member_function_pointer_v<decltype(callback)>>
+            set_not_found()
+            {
+                // store the function pointer, there is no instance
+                _not_found_handler.first    = &table::wrap_callback<callback>;
+                _not_found_handler.second   = nullptr;
+            }
+
+            /**
+             *  Set a handler for endpoints that are not found
+             *
+             *  @tparam callback    The callback to route to
+             *  @param  instance    The instance to invoke the callback on
+             */
+            template <auto callback>
+            std::enable_if_t<std::is_member_function_pointer_v<decltype(callback)>>
+            set_not_found(typename function_traits<decltype(callback)>::member_type* instance)
+            {
+                // store the function pointer and instance
+                _not_found_handler.first    = &table::wrap_callback<callback>;
+                _not_found_handler.second   = instance;
+            }
+
+            /**
              *  Route a request to one of the callbacks
              *
              *  @param  endpoint    The endpoint to route
@@ -106,6 +135,15 @@ namespace router {
                     }
                 }
 
+                // do we have a handler for endpoints that aren't registered
+                if (_not_found_handler.first != nullptr) {
+                    // extract the callback and instance
+                    auto [callback, instance] = _not_found_handler;
+
+                    // invoke the handler
+                    return callback(slugs, instance, std::forward<arguments>(parameters)...);
+                }
+
                 // none of the paths matched
                 throw std::out_of_range{ "Route not matched" };
             }
@@ -121,6 +159,11 @@ namespace router {
             using entry = std::tuple<path, wrapped_callback, void*>;
 
             /**
+             *  Fallback handler for endpoint not registered
+             */
+            using not_found_handler = std::pair<wrapped_callback, void*>;
+
+            /**
              *  Wrap a callback to create a uniform handler
              *
              *  @tparam callback    The callback to wrap
@@ -129,7 +172,7 @@ namespace router {
              *  @param  parameters  Additional arguments to pass to the callback
              */
             template <auto callback>
-            static return_type wrap_callback(const std::vector<std::string_view>& slugs, void* instance, arguments... parameters)
+            static return_type wrap_callback(const std::vector<std::string_view>& slugs, void* instance, arguments&&... parameters)
             {
                 // the number of arguments our callback function takes
                 // ignoring the extra variable parameter it may take
@@ -204,8 +247,9 @@ namespace router {
                 }
             }
 
-            std::vector<entry>  _prefixed_paths;    // a sorted list of paths with prefixes
-            std::vector<entry>  _unsorted_paths;    // paths without a prefix, not sorted
+            std::vector<entry>  _prefixed_paths;                            // a sorted list of paths with prefixes
+            std::vector<entry>  _unsorted_paths;                            // paths without a prefix, not sorted
+            not_found_handler   _not_found_handler  { nullptr, nullptr  };  // the optional handler for paths not found
     };
 
 }

@@ -14,6 +14,21 @@ TEST_CASE("paths can be matched", "[path]")
         REQUIRE_THROWS_AS(table.route("/test"), std::out_of_range);
     }
 
+    SECTION("404 handler") {
+        struct not_found_handler
+        {
+            void handle_404() { handler_invoked = true; }
+            bool handler_invoked{ false };
+        };
+
+        not_found_handler tester;
+
+        table.set_not_found<&not_found_handler::handle_404>(&tester);
+        table.route("/wherever/not/found");
+
+        REQUIRE(tester.handler_invoked == true);
+    }
+
     SECTION("invoking a member function") {
         struct callback_tester
         {
