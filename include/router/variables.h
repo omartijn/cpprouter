@@ -14,7 +14,7 @@ namespace router {
      *  @param  input   The slug data
      *  @param  output  The field to set
      */
-    void process_field(std::string_view input, std::string& output)
+    inline void process_field(std::string_view input, std::string& output)
     {
         // assign the input data to the output string
         output.assign(input);
