@@ -33,7 +33,7 @@ TEST_CASE("paths can be matched", "[path]")
         struct callback_tester
         {
             void callback1() { callback1_invoked = true; }
-            void callback2() { callback2_invoked = true; }
+            void callback2() noexcept { callback2_invoked = true; }
         
             bool callback1_invoked { false };
             bool callback2_invoked { false };
