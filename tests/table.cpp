@@ -2,6 +2,13 @@
 #include <router/table.h>
 #include <iostream>
 
+static bool free_callback_invoked{ false };
+
+void free_callback()
+{
+    free_callback_invoked = true;
+};
+
 
 TEST_CASE("paths can be matched", "[path]")
 {
@@ -27,6 +34,16 @@ TEST_CASE("paths can be matched", "[path]")
         table.route("/wherever/not/found");
 
         REQUIRE(tester.handler_invoked == true);
+    }
+
+    SECTION("invoking a free function") {
+        table.add<free_callback>("/callback");
+
+        REQUIRE(free_callback_invoked == false);
+
+        table.route("/callback");
+
+        REQUIRE(free_callback_invoked == true);
     }
 
     SECTION("invoking a member function") {
