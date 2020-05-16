@@ -37,7 +37,7 @@ TEST_CASE("paths can be matched", "[path]")
     }
 
     SECTION("invoking a free function") {
-        table.add<free_callback>("/callback");
+        table.add<&free_callback>("/callback");
 
         REQUIRE(free_callback_invoked == false);
 
