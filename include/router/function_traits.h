@@ -15,7 +15,7 @@ namespace router {
      *  Specialize for a function type
      */
     template <typename R, typename... Args>
-    struct function_traits<R(*)(Args...)>
+    struct function_traits<R(Args...)>
     {
         constexpr static bool           is_member_function  = false;
         constexpr static bool           is_noexcept         = false;
@@ -28,7 +28,7 @@ namespace router {
      *  Specialize for noexcept function types
      */
     template <typename R, typename... Args>
-    struct function_traits<R(*)(Args...) noexcept>
+    struct function_traits<R(Args...) noexcept>
     {
         constexpr static bool           is_member_function  = false;
         constexpr static bool           is_noexcept         = true;
@@ -36,6 +36,18 @@ namespace router {
         using                           return_type         = R;
         using                           argument_type       = std::tuple<Args...>;
     };
+
+    /**
+     *  Alias for a function pointer
+     */
+    template <typename R, typename... Args>
+    struct function_traits<R(*)(Args...)> : public function_traits<R(Args...)> {};
+
+    /**
+     *  Alias for a noexcept-qualified function pointer
+     */
+    template <typename R, typename... Args>
+    struct function_traits<R(*)(Args...) noexcept> : public function_traits<R(Args...) noexcept> {};
 
     /**
      *  Specialize for a member function type
