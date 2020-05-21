@@ -21,7 +21,9 @@ namespace router {
         constexpr static bool           is_noexcept         = false;
         constexpr static std::size_t    arity               = sizeof...(Args);
         using                           return_type         = R;
-        using                           argument_type       = std::tuple<Args...>;
+
+        template <std::size_t N>
+        using                           argument_type       = std::tuple_element_t<N, std::tuple<Args...>>;
     };
 
     /**
@@ -34,7 +36,9 @@ namespace router {
         constexpr static bool           is_noexcept         = true;
         constexpr static std::size_t    arity               = sizeof...(Args);
         using                           return_type         = R;
-        using                           argument_type       = std::tuple<Args...>;
+
+        template <std::size_t N>
+        using                           argument_type       = std::tuple_element_t<N, std::tuple<Args...>>;
     };
 
     /**
@@ -60,7 +64,9 @@ namespace router {
         constexpr static std::size_t    arity               = sizeof...(Args);
         using                           member_type         = X;
         using                           return_type         = R;
-        using                           argument_type       = std::tuple<Args...>;
+
+        template <std::size_t N>
+        using                           argument_type       = std::tuple_element_t<N, std::tuple<Args...>>;
     };
 
     /**
@@ -74,7 +80,9 @@ namespace router {
         constexpr static std::size_t    arity               = sizeof...(Args);
         using                           member_type         = X;
         using                           return_type         = R;
-        using                           argument_type       = std::tuple<Args...>;
+
+        template <std::size_t N>
+        using                           argument_type       = std::tuple_element_t<N, std::tuple<Args...>>;
     };
 
 }
