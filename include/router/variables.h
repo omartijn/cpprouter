@@ -4,44 +4,11 @@
 #include <charconv>
 #include <string_view>
 #include <string>
+#include "impl/variables.h"
+#include "fields.h"
 
 
 namespace router {
-
-    /**
-     *  Process a simple string field
-     *
-     *  @param  input   The slug data
-     *  @param  output  The field to set
-     */
-    inline void process_field(std::string_view input, std::string& output)
-    {
-        // assign the input data to the output string
-        output.assign(input);
-    }
-
-    /**
-     *  Process a field containing numerical data
-     *
-     *  @param  input   The slug data
-     *  @param  output  The field to set
-     */
-    template <typename integral>
-    std::enable_if_t<std::is_arithmetic_v<integral>>
-    process_field(std::string_view input, integral& output)
-    {
-        // first parse the input data
-        auto result = std::from_chars(input.data(), std::next(input.data(), input.size()), output, 10);
-
-        // check whether we successfully parsed the data and whether all of it was parsed
-        if (result.ec != std::errc{}) {
-            // some of the data was invalid and could not be converted
-            throw std::range_error{ std::make_error_code(result.ec).message() };
-        } else if (result.ptr != std::next(input.data(), input.size())) {
-            // part of the data contained numeric input, but not all of it
-            throw std::range_error{ "Input data contains non-numerical data" };
-        }
-    }
 
     /**
      *  Templated class describing bindings between
@@ -99,4 +66,57 @@ namespace router {
         }
     };
 
+    /**
+     *  Type trait for a type not implementing
+     *  the dto-specific requirements.
+     */
+    template <typename T, typename = void>
+    struct is_dto_type : std::false_type {};
+
+    /**
+     *  Type trait for a valid dto-compatible type
+     */
+    template <typename T>
+    struct is_dto_type<T, std::void_t<
+        /**
+         *  It must have a dto specialization on the type to be considered valid,
+         *  and it must be able process a vector of slugs onto the given data type
+         */
+        std::enable_if_t<std::is_same_v<
+            void,
+            decltype(T::dto::to_dto(
+                std::declval<const std::vector<std::string_view>&>(),
+                std::declval<T&>()
+            ))
+        >>
+    >> : std::true_type {};
+
+    /**
+     *  Value alias for dto type deduction
+     */
+    template <typename T>
+    constexpr bool is_dto_type_v = is_dto_type<T>::value;
+
+    /**
+     *  Read a vector of slugs and parse them
+     *  into the given dto type
+     */
+    template <typename data_type>
+    std::enable_if_t<is_dto_type_v<data_type>>
+    to_dto(const std::vector<std::string_view>& slugs, data_type& output)
+    {
+        // invoke the conversion routine on the types dto alias
+        data_type::dto::to_dto(slugs, output);
+    }
+
+    /**
+     *  Read a vector of slugs and parse them
+     *  into the given tuple
+     */
+    template <typename... types>
+    void to_dto(const std::vector<std::string_view>& slugs, std::tuple<types...>& output)
+    {
+        // create integer sequence for retrieving types from the tuple
+        impl::to_dto(slugs, output, std::make_index_sequence<sizeof...(types)>());
+    }
 }

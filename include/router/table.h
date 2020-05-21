@@ -191,16 +191,17 @@ namespace router {
                         // invoke the function on the given instance
                         return (static_cast<typename traits::member_type*>(instance)->*callback)(std::forward<arguments>(parameters)...);
                     }
-                } else if constexpr (traits::arity == arity + 1) {
+                } else if constexpr (traits::arity == arity + 1 && std::is_invocable_v<to_dto, std::declval<typename traits::template argument_type<arity>>>()) {
                     // determine the type used for the slug data, this comes as the optional
                     // last parameter the function may take, elements are zero-based
-                    using variable_type = std::remove_reference_t<std::tuple_element_t<arity, typename traits::argument_type>>;
+                    // using variable_type = std::remove_reference_t<std::tuple_element_t<arity, typename traits::argument_type>>;
+                    using variable_type = std::remove_reference_t<typename traits::template argument_type<arity>>;
 
                     // create the variables to be filled and try to match the target
                     variable_type   variables{};
 
                     // parse the variables
-                    variable_type::dto::to_dto(slugs, variables);
+                    to_dto(slugs, variables);
 
                     // is it a member function?
                     if constexpr (!traits::is_member_function) {

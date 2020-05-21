@@ -3,6 +3,7 @@ set(test-sources
     path.cpp
     slug.cpp
     table.cpp
+    variables.cpp
 )
 
 add_executable(test ${test-sources})
