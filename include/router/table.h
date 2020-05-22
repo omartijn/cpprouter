@@ -191,14 +191,13 @@ namespace router {
                         // invoke the function on the given instance
                         return (static_cast<typename traits::member_type*>(instance)->*callback)(std::forward<arguments>(parameters)...);
                     }
-                } else if constexpr (traits::arity == arity + 1 && std::is_invocable_v<to_dto, std::declval<typename traits::template argument_type<arity>>>()) {
+                } else if constexpr (traits::arity == arity + 1 && (is_dto_type_v<std::remove_reference_t<typename traits::template argument_type<arity>>> || is_dto_tuple_v<std::remove_reference_t<typename traits::template argument_type<arity>>>)) {
                     // determine the type used for the slug data, this comes as the optional
                     // last parameter the function may take, elements are zero-based
-                    // using variable_type = std::remove_reference_t<std::tuple_element_t<arity, typename traits::argument_type>>;
                     using variable_type = std::remove_reference_t<typename traits::template argument_type<arity>>;
 
                     // create the variables to be filled and try to match the target
-                    variable_type   variables{};
+                    variable_type variables{};
 
                     // parse the variables
                     to_dto(slugs, variables);
@@ -212,10 +211,31 @@ namespace router {
                         return (static_cast<typename traits::member_type*>(instance)->*callback)(std::forward<arguments>(parameters)..., std::move(variables));
                     }
                 } else {
-                    // the number parameters the function requires is incorrect
-                    // note: the comparison is required to prevent static_assert
-                    // from being overly trigger-happy
-                    static_assert(traits::arity == arity, "Callback function unusable, incorrect arity");
+                    // the variable type is a tuple of the slug arguments
+                    // which is unpacked later using std::apply
+                    using variable_type = typename traits::template arguments_slice<arity>;
+
+                    // create the variables to be filled and try to match the target
+                    variable_type variables{};
+
+                    // parse the variables
+                    to_dto(slugs, variables);
+
+                    // is it a member function?
+                    if constexpr (!traits::is_member_function) {
+                        // invoke the wrapped callback and return the result
+                        return std::apply(callback, std::tuple_cat(
+                            std::forward_as_tuple(parameters...),
+                            std::move(variables)
+                        ));
+                    } else {
+                        // invoke the function on the given instance
+                        return std::apply(callback, std::tuple_cat(
+                            std::forward_as_tuple(static_cast<typename traits::member_type*>(instance)),
+                            std::forward_as_tuple(parameters...),
+                            std::move(variables)
+                        ));
+                    }
                 }
             }
 

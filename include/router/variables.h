@@ -97,6 +97,26 @@ namespace router {
     template <typename T>
     constexpr bool is_dto_type_v = is_dto_type<T>::value;
 
+
+    /**
+     *  Type trait for an std::tuple of processable fields
+     */
+    template <typename>
+    struct is_dto_tuple : std::false_type {};
+
+    /**
+     *  Type trait for a valid tuple match
+     */
+    template <typename... T>
+    struct is_dto_tuple<std::tuple<T...>> :
+        std::integral_constant<bool, (... && is_processable_field<T>::value)> {};
+
+    /**
+     *  Value alias for dto tuple deduction
+     */
+    template <typename T>
+    constexpr bool is_dto_tuple_v = is_dto_tuple<T>::value;
+
     /**
      *  Read a vector of slugs and parse them
      *  into the given dto type
@@ -114,9 +134,11 @@ namespace router {
      *  into the given tuple
      */
     template <typename... types>
-    void to_dto(const std::vector<std::string_view>& slugs, std::tuple<types...>& output)
+    std::enable_if_t<is_dto_tuple_v<std::tuple<types...>>>
+    to_dto(const std::vector<std::string_view>& slugs, std::tuple<types...>& output)
     {
         // create integer sequence for retrieving types from the tuple
         impl::to_dto(slugs, output, std::make_index_sequence<sizeof...(types)>());
     }
+
 }

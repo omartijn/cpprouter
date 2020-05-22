@@ -4,6 +4,7 @@ set(test-sources
     slug.cpp
     table.cpp
     variables.cpp
+    tuple_slice.cpp
 )
 
 add_executable(test ${test-sources})

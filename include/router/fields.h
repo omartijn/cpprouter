@@ -43,4 +43,25 @@ namespace router {
         }
     }
 
+    /**
+     *  Type trait to check whether a field is processable
+     *
+     *  Default for when no valid match is made
+     */
+    template <typename T, typename = void>
+    struct is_processable_field : std::false_type {};
+
+    /**
+     *  Match for a valid processable field
+     */
+    template <typename T>
+    struct is_processable_field<T, std::void_t<
+        std::enable_if_t<
+            std::is_same_v<
+                void,
+                decltype(process_field(std::string_view{}, std::declval<T&>()))
+            >
+        >
+    >> : std::true_type {};
+
 }
