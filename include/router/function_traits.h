@@ -1,6 +1,7 @@
 #pragma once
 
 #include <tuple>
+#include "tuple_slice.h"
 
 
 namespace router {
@@ -22,6 +23,11 @@ namespace router {
         constexpr static std::size_t    arity               = sizeof...(Args);
         using                           return_type         = R;
 
+        using                           arguments_tuple     = std::tuple<Args...>;
+
+        template <std::size_t N>
+        using                           arguments_slice     = tuple_slice_t<N, std::remove_reference_t<Args>...>;
+
         template <std::size_t N>
         using                           argument_type       = std::tuple_element_t<N, std::tuple<Args...>>;
     };
@@ -36,6 +42,11 @@ namespace router {
         constexpr static bool           is_noexcept         = true;
         constexpr static std::size_t    arity               = sizeof...(Args);
         using                           return_type         = R;
+
+        using                           arguments_tuple     = std::tuple<Args...>;
+
+        template <std::size_t N>
+        using                           arguments_slice     = tuple_slice_t<N, std::remove_reference_t<Args>...>;
 
         template <std::size_t N>
         using                           argument_type       = std::tuple_element_t<N, std::tuple<Args...>>;
@@ -65,6 +76,11 @@ namespace router {
         using                           member_type         = X;
         using                           return_type         = R;
 
+        using                           arguments_tuple     = std::tuple<Args...>;
+
+        template <std::size_t N>
+        using                           arguments_slice     = tuple_slice_t<N, std::remove_reference_t<Args>...>;
+
         template <std::size_t N>
         using                           argument_type       = std::tuple_element_t<N, std::tuple<Args...>>;
     };
@@ -80,6 +96,11 @@ namespace router {
         constexpr static std::size_t    arity               = sizeof...(Args);
         using                           member_type         = X;
         using                           return_type         = R;
+
+        using                           arguments_tuple     = std::tuple<Args...>;
+
+        template <std::size_t N>
+        using                           arguments_slice     = tuple_slice_t<N, std::remove_reference_t<Args>...>;
 
         template <std::size_t N>
         using                           argument_type       = std::tuple_element_t<N, std::tuple<Args...>>;
