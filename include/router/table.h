@@ -225,14 +225,14 @@ namespace router {
                     if constexpr (!traits::is_member_function) {
                         // invoke the wrapped callback and return the result
                         return std::apply(callback, std::tuple_cat(
-                            std::forward_as_tuple(parameters...),
+                            std::forward_as_tuple(std::forward<arguments>(parameters)...),
                             std::move(variables)
                         ));
                     } else {
                         // invoke the function on the given instance
                         return std::apply(callback, std::tuple_cat(
                             std::forward_as_tuple(static_cast<typename traits::member_type*>(instance)),
-                            std::forward_as_tuple(parameters...),
+                            std::forward_as_tuple(std::forward<arguments>(parameters)...),
                             std::move(variables)
                         ));
                     }
