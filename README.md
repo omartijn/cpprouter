@@ -42,19 +42,36 @@ router.add<&class::callback>("pattern", instance_pointer);
 ```
 
 The first variant is used for registering a _free function_, while the second variant is used
-for registering a member function as the callback. Callbacks may be registered on _any_ class,
+for registering a _member function_ as the callback. Callbacks may be registered on _any_ class,
 as long as they have the correct signature.
 
 ### Working with slug data
 
-If the URL patterns contain _slugs_, you are probably interested in the data they hold. To get
-access to the data, a special _data transfer object_ must be defined for the callback, and the
-callback needs to accept this object as the final parameter.
+If the URL patterns contain _slugs_, you are probably interested in the data they hold. There are
+three ways to get this data.
+
+- Accept the data as separate parameters to the callback
+- Accept a tuple with the slug data in the callback
+- Accept a custom _data transfer object_ in the callback
+
+The first two options are the easiest. Let's assume our previous examples of a callback definition
+of `int(std::string&&)` and a pattern of `/test/{\d+}/{\w+}`. From the pattern, it's clear that the
+first slug should contain _numeric data_, and the second slug contains a string. We could therefore
+define and register our callback like this:
+
+```
+int callback(std::string&& body, int numeric, std::string&& word);
+int callback(std::string&& body, std::tuple<int, std::string>&& slugs);
+```
+
+When a matching request is routed, the slugs are automatically parsed and converted to the right
+type before the callback is invoked.
+
+It is also possible to make a dedicated struct, a so-called _data transfer object_, to receive
+the slug data.
 
 The _data transfer object_ needs to be annotated so that cpprouter knows how to parse the slug
-data, this is done by defining a `using` alias on the class. Assuming that the URL pattern has
-two slugs, where the first is purely numeric (i.e. `\d+`) and the second is word data (i.e. `\w+`),
-one can define this _data transfer object_ as follows:
+data, this is done by defining a `using` alias on the class.
 
 ```
 class slug_dto {
