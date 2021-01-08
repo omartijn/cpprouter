@@ -19,6 +19,7 @@ TEST_CASE("paths can be matched", "[path]")
         // the table is empty, so all attempts to route
         // will yield a out of range condition
         REQUIRE_THROWS_AS(table.route("/test"), std::out_of_range);
+        REQUIRE(table.routable("/test") == false);
     }
 
     SECTION("404 handler") {
@@ -32,6 +33,7 @@ TEST_CASE("paths can be matched", "[path]")
 
         table.set_not_found<&not_found_handler::handle_404>(&tester);
         table.route("/wherever/not/found");
+        REQUIRE(table.routable("/wherever/not/found") == false);
 
         REQUIRE(tester.handler_invoked == true);
     }
@@ -42,6 +44,8 @@ TEST_CASE("paths can be matched", "[path]")
         REQUIRE(free_callback_invoked == false);
 
         table.route("/callback");
+        REQUIRE(table.routable("/callback") == true);
+        REQUIRE(table.routable("/some/other/path") == false);
 
         REQUIRE(free_callback_invoked == true);
     }

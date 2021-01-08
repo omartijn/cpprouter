@@ -85,6 +85,25 @@ namespace router {
             }
 
             /**
+             *  Check whether a given endpoint can be routed
+             *
+             *  Note that this function ignores the not-found
+             *  handler, since this would otherwise make this
+             *  function return true unconditionally.
+             *
+             *  @param  endpoint    The endpoint to check
+             *  @return Whether the endpoint can be routed
+             */
+            bool routable(std::string_view endpoint) noexcept
+            {
+                // find the handler for the given endpoint
+                auto [callback, _] = get_handler(endpoint);
+
+                // check whether the callback is valid
+                return callback != nullptr;
+            }
+
+            /**
              *  Route a request to one of the callbacks
              *
              *  @param  endpoint    The endpoint to route
@@ -94,45 +113,10 @@ namespace router {
              */
             return_type route(std::string_view endpoint, arguments... parameters)
             {
-                // local vector for capturing slugs, this is static
-                // so the storage gets re-used, saving on (de)allocations
-                thread_local std::vector<std::string_view> slugs;
-
-                // find the first possibly matching entry by prefix
-                auto iter = std::lower_bound(begin(_prefixed_paths), end(_prefixed_paths), endpoint, [](const auto& a, const auto& b) {
-                    // check whether the prefix comes before the given endpoint
-                    return std::get<0>(a).prefix() < b.substr(0, std::get<0>(a).prefix().size());
-                });
-
-                // try all valid matches
-                while (iter != end(_prefixed_paths)) {
-                    // retrieve the path, callback and instance
-                    const auto& [path, callback, instance] = *iter;
-
-                    // if the prefix no longer matches we have exhausted all options
-                    if (!path.match_prefix(endpoint)) {
-                        // stop now to avoid expensive regex calls
-                        break;
-                    }
-
-                    // try to match the path to the given endpoint
-                    if (path.match(endpoint, slugs)) {
-                        // we matched the endpoint, invoke the callback
-                        return callback(slugs, instance, std::forward<arguments>(parameters)...);
-                    }
-
-                    // move on to the next entry
-                    ++iter;
-                }
-
-                // none of the prefixed paths matched, so try the
-                // unsorted paths without a known prefix
-                for (const auto& [path, callback, instance] : _unsorted_paths) {
-                    // try to match the path to the given endpoint
-                    if (path.match(endpoint, slugs)) {
-                        // we matched the endpoint, invoke the callback
-                        return callback(slugs, instance, std::forward<arguments>(parameters)...);
-                    }
+                // find the handler for the given endpoint
+                if (auto [callback, instance] = get_handler(endpoint); callback != nullptr) {
+                    // invoke the callback
+                    return callback(slugs(), instance, std::forward<arguments>(parameters)...);
                 }
 
                 // do we have a handler for endpoints that aren't registered
@@ -141,7 +125,7 @@ namespace router {
                     auto [callback, instance] = _not_found_handler;
 
                     // invoke the handler
-                    return callback(slugs, instance, std::forward<arguments>(parameters)...);
+                    return callback({}, instance, std::forward<arguments>(parameters)...);
                 }
 
                 // none of the paths matched
@@ -266,6 +250,74 @@ namespace router {
                     // add it to the sorted list before the found element
                     _prefixed_paths.emplace(iter, std::move(path), callback, instance);
                 }
+            }
+
+            /**
+             *  Retrieve the handler for a specific endpoint
+             *
+             *  If a valid handler is found (i.e. the result contains a valid
+             *  callback) then _slugs is filled with the found slug data.
+             *
+             *  @param  endpoint    The endpoint to find
+             *  @return The found match, which may be invalid
+             */
+            std::pair<wrapped_callback, void*> get_handler(std::string_view endpoint) noexcept
+            {
+                // find the first possibly matching entry by prefix
+                auto iter = std::lower_bound(begin(_prefixed_paths), end(_prefixed_paths), endpoint, [](const auto& a, const auto& b) {
+                    // check whether the prefix comes before the given endpoint
+                    return std::get<0>(a).prefix() < b.substr(0, std::get<0>(a).prefix().size());
+                });
+
+                // try all valid matches
+                while (iter != end(_prefixed_paths)) {
+                    // retrieve the path, callback and instance
+                    const auto& [path, callback, instance] = *iter;
+
+                    // if the prefix no longer matches we have exhausted all options
+                    if (!path.match_prefix(endpoint)) {
+                        // stop now to avoid expensive regex calls
+                        break;
+                    }
+
+                    // try to match the path to the given endpoint
+                    if (path.match(endpoint, slugs())) {
+                        // we matched the endpoint, return the handler
+                        return { callback, instance };
+                    }
+
+                    // move on to the next entry
+                    ++iter;
+                }
+
+                // none of the prefixed paths matched, so try the
+                // unsorted paths without a known prefix
+                for (const auto& [path, callback, instance] : _unsorted_paths) {
+                    // try to match the path to the given endpoint
+                    if (path.match(endpoint, slugs())) {
+                        // we matched the endpoint, return the handler
+                        return { callback, instance };
+                    }
+                }
+
+                // none of the paths matched
+                return {};
+            }
+
+            /**
+             *  Retrieve the slug data
+             *
+             *  @note   This data is stored locally per thread to ensure
+             *          that the table remains thread-safe, and can re-use
+             *          allocated data between calls.
+             *
+             *  @return The slug data
+             */
+            static std::vector<std::string_view>& slugs() noexcept
+            {
+                // the slugs to cache
+                thread_local std::vector<std::string_view> slugs;
+                return slugs;
             }
 
             std::vector<entry>  _prefixed_paths;                            // a sorted list of paths with prefixes
