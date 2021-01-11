@@ -94,13 +94,28 @@ namespace router {
              *  @param  endpoint    The endpoint to check
              *  @return Whether the endpoint can be routed
              */
-            bool routable(std::string_view endpoint) noexcept
+            bool routable(std::string_view endpoint) const noexcept
             {
                 // find the handler for the given endpoint
                 auto [callback, _] = get_handler(endpoint);
 
                 // check whether the callback is valid
                 return callback != nullptr;
+            }
+
+            /**
+             *  Check whether a fallback handler is installed
+             *
+             *  If a fallback handler is installed and no endpoint is
+             *  available when routing, the fallback handler is used.
+             *  This also means that routing will never fail due to a
+             *  missing endpoint.
+             *
+             *  @return Whether a fallback handler is installed
+             */
+            bool has_not_found_handler() const noexcept
+            {
+                return _not_found_handler.first != nullptr;
             }
 
             /**
@@ -111,7 +126,7 @@ namespace router {
              *  @return The result of the callback
              *  @throws std::out_of_range
              */
-            return_type route(std::string_view endpoint, arguments... parameters)
+            return_type route(std::string_view endpoint, arguments... parameters) const
             {
                 // find the handler for the given endpoint
                 if (auto [callback, instance] = get_handler(endpoint); callback != nullptr) {
@@ -261,7 +276,7 @@ namespace router {
              *  @param  endpoint    The endpoint to find
              *  @return The found match, which may be invalid
              */
-            std::pair<wrapped_callback, void*> get_handler(std::string_view endpoint) noexcept
+            std::pair<wrapped_callback, void*> get_handler(std::string_view endpoint) const noexcept
             {
                 // find the first possibly matching entry by prefix
                 auto iter = std::lower_bound(begin(_prefixed_paths), end(_prefixed_paths), endpoint, [](const auto& a, const auto& b) {

@@ -20,6 +20,7 @@ TEST_CASE("paths can be matched", "[path]")
         // will yield a out of range condition
         REQUIRE_THROWS_AS(table.route("/test"), std::out_of_range);
         REQUIRE(table.routable("/test") == false);
+        REQUIRE(table.has_not_found_handler() == false);
     }
 
     SECTION("404 handler") {
@@ -34,6 +35,7 @@ TEST_CASE("paths can be matched", "[path]")
         table.set_not_found<&not_found_handler::handle_404>(&tester);
         table.route("/wherever/not/found");
         REQUIRE(table.routable("/wherever/not/found") == false);
+        REQUIRE(table.has_not_found_handler() == true);
 
         REQUIRE(tester.handler_invoked == true);
     }

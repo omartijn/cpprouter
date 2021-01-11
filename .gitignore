@@ -36,3 +36,7 @@ build*
 
 # Editor temp files
 **swp
+
+# clangd / youcompleteme
+compile_commands.json
+.clangd
