@@ -1,12 +1,13 @@
 #pragma once
 
+#include <stdexcept>
 #include <string_view>
+#include <system_error>
 #include <type_traits>
 #include <charconv>
 
 
 namespace router {
-
 
     /**
      *  Process a simple string field
@@ -18,6 +19,18 @@ namespace router {
     {
         // assign the input data to the output string
         output.assign(input);
+    }
+
+    /**
+     *  Process a simple string field
+     *
+     *  @param  input   The slug data
+     *  @param  output  The field to set
+     */
+    inline void process_field(std::string_view input, std::string_view& output)
+    {
+        // assign the input data to the output string
+        output = input;
     }
 
     /**
