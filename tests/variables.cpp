@@ -8,9 +8,9 @@ TEST_CASE("slugs should parse correctly into structs")
     SECTION("parse slugs into struct") {
         struct dto_struct
         {
-            std::string field1;
-            std::size_t field2;
-            std::string field3;
+            std::string         field1;
+            std::size_t         field2;
+            std::string_view    field3;
 
             using dto = router::dto<dto_struct>
                 ::bind<&dto_struct::field1>
@@ -28,7 +28,7 @@ TEST_CASE("slugs should parse correctly into structs")
     }
 
     SECTION("parse slugs into tuple") {
-        std::tuple<std::string, std::size_t, std::string> output{};
+        std::tuple<std::string_view, std::size_t, std::string> output{};
 
         router::to_dto(slugs, output);
 
