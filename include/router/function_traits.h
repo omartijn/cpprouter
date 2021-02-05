@@ -19,6 +19,7 @@ namespace router {
     struct function_traits<R(Args...)>
     {
         constexpr static bool           is_member_function  = false;
+        constexpr static bool           is_const            = false;
         constexpr static bool           is_noexcept         = false;
         constexpr static std::size_t    arity               = sizeof...(Args);
         using                           return_type         = R;
@@ -39,6 +40,7 @@ namespace router {
     struct function_traits<R(Args...) noexcept>
     {
         constexpr static bool           is_member_function  = false;
+        constexpr static bool           is_const            = false;
         constexpr static bool           is_noexcept         = true;
         constexpr static std::size_t    arity               = sizeof...(Args);
         using                           return_type         = R;
@@ -71,6 +73,29 @@ namespace router {
     struct function_traits<R(X::*)(Args...)>
     {
         constexpr static bool           is_member_function  = true;
+        constexpr static bool           is_const            = false;
+        constexpr static bool           is_noexcept         = false;
+        constexpr static std::size_t    arity               = sizeof...(Args);
+        using                           member_type         = X;
+        using                           return_type         = R;
+
+        using                           arguments_tuple     = std::tuple<Args...>;
+
+        template <std::size_t N>
+        using                           arguments_slice     = tuple_slice_t<N, std::remove_reference_t<Args>...>;
+
+        template <std::size_t N>
+        using                           argument_type       = std::tuple_element_t<N, std::tuple<Args...>>;
+    };
+
+    /**
+     *  Specialize for a const member function type
+     */
+    template <typename R, typename... Args, typename X>
+    struct function_traits<R(X::*)(Args...) const>
+    {
+        constexpr static bool           is_member_function  = true;
+        constexpr static bool           is_const            = true;
         constexpr static bool           is_noexcept         = false;
         constexpr static std::size_t    arity               = sizeof...(Args);
         using                           member_type         = X;
@@ -92,6 +117,29 @@ namespace router {
     struct function_traits<R(X::*)(Args...) noexcept>
     {
         constexpr static bool           is_member_function  = true;
+        constexpr static bool           is_const            = false;
+        constexpr static bool           is_noexcept         = true;
+        constexpr static std::size_t    arity               = sizeof...(Args);
+        using                           member_type         = X;
+        using                           return_type         = R;
+
+        using                           arguments_tuple     = std::tuple<Args...>;
+
+        template <std::size_t N>
+        using                           arguments_slice     = tuple_slice_t<N, std::remove_reference_t<Args>...>;
+
+        template <std::size_t N>
+        using                           argument_type       = std::tuple_element_t<N, std::tuple<Args...>>;
+    };
+
+    /**
+     *  Specialize for a const noexcept member function type
+     */
+    template <typename R, typename... Args, typename X>
+    struct function_traits<R(X::*)(Args...) const noexcept>
+    {
+        constexpr static bool           is_member_function  = true;
+        constexpr static bool           is_const            = true;
         constexpr static bool           is_noexcept         = true;
         constexpr static std::size_t    arity               = sizeof...(Args);
         using                           member_type         = X;

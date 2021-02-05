@@ -55,30 +55,56 @@ TEST_CASE("paths can be matched", "[path]")
     SECTION("invoking a member function") {
         struct callback_tester
         {
-            void callback1() { callback1_invoked = true; }
-            void callback2() noexcept { callback2_invoked = true; }
+            void callback1()                { callback1_invoked = true; }
+            void callback2() noexcept       { callback2_invoked = true; }
+            void callback3() const          { callback3_invoked = true; }
+            void callback4() const noexcept { callback4_invoked = true; }
 
-            bool callback1_invoked { false };
-            bool callback2_invoked { false };
+            bool            callback1_invoked { false };
+            bool            callback2_invoked { false };
+            mutable bool    callback3_invoked { false };
+            mutable bool    callback4_invoked { false };
         };
 
         callback_tester tester;
 
         table.add<&callback_tester::callback1>("/callback/1", &tester);
         table.add<&callback_tester::callback2>("/callback/2", &tester);
+        table.add<&callback_tester::callback3>("/callback/3", &tester);
+        table.add<&callback_tester::callback4>("/callback/4", &tester);
 
         REQUIRE(tester.callback1_invoked == false);
         REQUIRE(tester.callback2_invoked == false);
+        REQUIRE(tester.callback3_invoked == false);
+        REQUIRE(tester.callback4_invoked == false);
 
         table.route("/callback/1");
 
         REQUIRE(tester.callback1_invoked == true);
         REQUIRE(tester.callback2_invoked == false);
+        REQUIRE(tester.callback3_invoked == false);
+        REQUIRE(tester.callback4_invoked == false);
 
         table.route("/callback/2");
 
         REQUIRE(tester.callback1_invoked == true);
         REQUIRE(tester.callback2_invoked == true);
+        REQUIRE(tester.callback3_invoked == false);
+        REQUIRE(tester.callback4_invoked == false);
+
+        table.route("/callback/3");
+
+        REQUIRE(tester.callback1_invoked == true);
+        REQUIRE(tester.callback2_invoked == true);
+        REQUIRE(tester.callback3_invoked == true);
+        REQUIRE(tester.callback4_invoked == false);
+
+        table.route("/callback/4");
+
+        REQUIRE(tester.callback1_invoked == true);
+        REQUIRE(tester.callback2_invoked == true);
+        REQUIRE(tester.callback3_invoked == true);
+        REQUIRE(tester.callback4_invoked == true);
     }
 
     SECTION("invoking a member function with slug") {
