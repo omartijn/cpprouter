@@ -9,6 +9,7 @@ set(test-sources
     table.cpp
     variables.cpp
     tuple_slice.cpp
+    proxy_table.cpp
 )
 
 add_executable(test ${test-sources})
