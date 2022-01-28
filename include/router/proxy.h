@@ -57,7 +57,7 @@ namespace router {
             set() noexcept
             {
                 // the index to store under
-                constexpr auto index = method_index<method>();
+                constexpr auto index = method_index(method);
 
                 // wrap and store the callback
                 _callbacks[index].template set<callback>();
@@ -78,7 +78,7 @@ namespace router {
             set(typename function_traits<decltype(callback)>::member_type* instance) noexcept
             {
                 // the index to store under
-                constexpr auto index = method_index<method>();
+                constexpr auto index = method_index(method);
 
                 // wrap and store the callback
                 _callbacks[index].template set<callback>(instance);
@@ -93,21 +93,9 @@ namespace router {
              *
              *  @param  method The method to lookup
              */
-            static std::size_t method_index(decltype(first) method)
+            constexpr static std::size_t method_index(decltype(first) method)
             {
                 return variadic_lookup<0, first, rest...>(method);
-            }
-
-            /**
-             *  Retrieve the index for the method
-             *  in the list of methods
-             *
-             *  @tparam method  The property to lookup
-             */
-            template <decltype(first) method>
-            constexpr static std::size_t method_index()
-            {
-                return variadic_lookup<method, first, rest...>();
             }
 
             /**
