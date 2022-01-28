@@ -73,4 +73,43 @@ TEST_CASE("paths and methods can be matched", "[path-method]")
         REQUIRE(tester.method_not_allowed == true);
     }
 
+    SECTION("route call to correct method") {
+        struct callback_tester
+        {
+            void handle_404() { not_found_invoked = true; }
+            bool not_found_invoked{ false };
+
+            void handle_405() { method_not_allowed = true; }
+            bool method_not_allowed{ false };
+
+            void handle_get() { get_invoked = true; }
+            bool get_invoked{ false };
+
+            void handle_post() { post_invoked = true; }
+            bool post_invoked{ false };
+        };
+
+        callback_tester tester;
+
+        table.add("/callback")
+            .set<method::get, &callback_tester::handle_get>(&tester)
+            .set<method::post, &callback_tester::handle_post>(&tester);
+
+        table.set_not_found<&callback_tester::handle_404>(&tester);
+        table.route("/callback", method::put);
+        REQUIRE(table.routable("/callback") == true);
+        REQUIRE(table.has_not_found_handler() == true);
+
+        REQUIRE(tester.not_found_invoked == true);
+
+        // now set up a handler for missing method specifically
+        table.set_not_proxied<&callback_tester::handle_405>(&tester);
+        table.route("/callback", method::put);
+
+        REQUIRE(tester.method_not_allowed == true);
+
+        table.route("/callback", method::post);
+        REQUIRE(tester.post_invoked == true);
+    }
+
 }

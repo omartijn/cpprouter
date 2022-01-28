@@ -18,16 +18,4 @@ namespace router {
         }
     }
 
-    template <auto needle, decltype(needle) straw, decltype(needle)... haystack, std::size_t index = 0>
-    constexpr std::size_t variadic_lookup()
-    {
-        if constexpr(needle == straw) {
-            return index;
-        } else if constexpr (sizeof...(haystack) > 0) {
-            return variadic_lookup<needle, haystack..., index + 1>();
-        } else {
-            static_assert(sizeof...(haystack) > 0, "Needle not found in haystack");
-        }
-    }
-
 }
