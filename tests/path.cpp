@@ -1,16 +1,15 @@
-#include "catch2.hpp"
 #include <router/path.h>
 
+#include <catch2/catch_all.hpp>
 
-TEST_CASE("paths should correctly identify and parse slugs", "[path]")
-{
+TEST_CASE("paths should correctly identify and parse slugs", "[path]") {
     // a container to hold slug matches
-    std::vector<std::string_view>   slugs;
+    std::vector<std::string_view> slugs;
 
     SECTION("path without any slugs") {
         // no slug start inside the part, this is a very simple path
-        std::string_view    slug_free   { "/simple/path/without/slugs"  };
-        router::path        path        { slug_free                     };
+        std::string_view slug_free{"/simple/path/without/slugs"};
+        router::path path{slug_free};
 
         // since there are no slugs, both match_prefix
         // and match should behave exactly the same
@@ -28,9 +27,10 @@ TEST_CASE("paths should correctly identify and parse slugs", "[path]")
 
     SECTION("path with a simple slug") {
         // path with only a simple slug, with a very simple regex
-        router::path    path    { "/test/{\\d+}/test"   };
+        router::path path{"/test/{\\d+}/test"};
 
-        // testing prefix only works when all data up to the first prefix is available
+        // testing prefix only works when all data up to the first prefix is
+        // available
         REQUIRE(path.match_prefix("/test/no-longer-inprefix") == true);
         REQUIRE(path.match_prefix("/testing/10/test") == false);
 
@@ -53,7 +53,7 @@ TEST_CASE("paths should correctly identify and parse slugs", "[path]")
 
     SECTION("slug with embedded curly braces") {
         // this path has curly braces inside the slug regex
-        router::path    path    { "/test/{\\d{2}}/test" };
+        router::path path{"/test/{\\d{2}}/test"};
 
         // this should only match on data with the correct number
         // of numbers inside the slug data

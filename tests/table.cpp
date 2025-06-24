@@ -1,19 +1,14 @@
-#include "catch2.hpp"
 #include <router/table.h>
-#include <iostream>
 
-static bool free_callback_invoked{ false };
+#include <catch2/catch_all.hpp>
 
-void free_callback()
-{
-    free_callback_invoked = true;
-};
+static bool free_callback_invoked{false};
 
+void free_callback() { free_callback_invoked = true; };
 
-TEST_CASE("paths can be matched", "[path]")
-{
+TEST_CASE("paths can be matched", "[path]") {
     // an empty table to test with
-    router::table<void()>   table;
+    router::table<void()> table;
 
     SECTION("never route on an empty table") {
         // the table is empty, so all attempts to route
@@ -24,10 +19,9 @@ TEST_CASE("paths can be matched", "[path]")
     }
 
     SECTION("404 handler") {
-        struct not_found_handler
-        {
+        struct not_found_handler {
             void handle_404() { handler_invoked = true; }
-            bool handler_invoked{ false };
+            bool handler_invoked{false};
         };
 
         not_found_handler tester;
@@ -53,17 +47,16 @@ TEST_CASE("paths can be matched", "[path]")
     }
 
     SECTION("invoking a member function") {
-        struct callback_tester
-        {
-            void callback1()                { callback1_invoked = true; }
-            void callback2() noexcept       { callback2_invoked = true; }
-            void callback3() const          { callback3_invoked = true; }
+        struct callback_tester {
+            void callback1() { callback1_invoked = true; }
+            void callback2() noexcept { callback2_invoked = true; }
+            void callback3() const { callback3_invoked = true; }
             void callback4() const noexcept { callback4_invoked = true; }
 
-            bool            callback1_invoked { false };
-            bool            callback2_invoked { false };
-            mutable bool    callback3_invoked { false };
-            mutable bool    callback4_invoked { false };
+            bool callback1_invoked{false};
+            bool callback2_invoked{false};
+            mutable bool callback3_invoked{false};
+            mutable bool callback4_invoked{false};
         };
 
         callback_tester tester;
@@ -108,32 +101,26 @@ TEST_CASE("paths can be matched", "[path]")
     }
 
     SECTION("invoking a member function with slug") {
-        struct slug_data
-        {
+        struct slug_data {
             std::size_t number;
             std::string slug;
 
-            using dto = router::dto<slug_data>
-                ::bind<&slug_data::number>
-                ::bind<&slug_data::slug>;
+            using dto = router::dto<slug_data>::bind<&slug_data::number>::bind<
+                &slug_data::slug>;
         };
 
-        struct callback_tester
-        {
-            void callback1(std::size_t number, std::string&& slug)
-            {
+        struct callback_tester {
+            void callback1(std::size_t number, std::string&& slug) {
                 _number = number;
                 _slug = std::move(slug);
             }
 
-            void callback2(std::tuple<std::size_t, std::string>&& slugs)
-            {
+            void callback2(std::tuple<std::size_t, std::string>&& slugs) {
                 _number = std::get<0>(slugs);
                 _slug = std::move(std::get<1>(slugs));
             }
 
-            void callback3(slug_data&& slugs)
-            {
+            void callback3(slug_data&& slugs) {
                 _number = slugs.number;
                 _slug = std::move(slugs.slug);
             }
@@ -147,9 +134,12 @@ TEST_CASE("paths can be matched", "[path]")
 
         callback_tester tester;
 
-        table.add<&callback_tester::callback1>("/callback1/{\\d+}/{\\w+}", &tester);
-        table.add<&callback_tester::callback2>("/callback2/{\\d+}/{\\w+}", &tester);
-        table.add<&callback_tester::callback3>("/callback3/{\\d+}/{\\w+}", &tester);
+        table.add<&callback_tester::callback1>("/callback1/{\\d+}/{\\w+}",
+                                               &tester);
+        table.add<&callback_tester::callback2>("/callback2/{\\d+}/{\\w+}",
+                                               &tester);
+        table.add<&callback_tester::callback3>("/callback3/{\\d+}/{\\w+}",
+                                               &tester);
 
         table.route("/callback1/100/hello_world");
 
