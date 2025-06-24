@@ -1,21 +1,19 @@
-#include "catch2.hpp"
 #include <router/variables.h>
 
-TEST_CASE("slugs should parse correctly into structs")
-{
-    std::vector<std::string_view> slugs { "abc", "10", "def" };
+#include <catch2/catch_all.hpp>
+
+TEST_CASE("slugs should parse correctly into structs") {
+    std::vector<std::string_view> slugs{"abc", "10", "def"};
 
     SECTION("parse slugs into struct") {
-        struct dto_struct
-        {
-            std::string         field1;
-            std::size_t         field2;
-            std::string_view    field3;
+        struct dto_struct {
+            std::string field1;
+            std::size_t field2;
+            std::string_view field3;
 
-            using dto = router::dto<dto_struct>
-                ::bind<&dto_struct::field1>
-                ::bind<&dto_struct::field2>
-                ::bind<&dto_struct::field3>;
+            using dto =
+                router::dto<dto_struct>::bind<&dto_struct::field1>::bind<
+                    &dto_struct::field2>::bind<&dto_struct::field3>;
         };
 
         dto_struct output{};
