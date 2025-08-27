@@ -100,6 +100,36 @@ TEST_CASE("paths can be matched", "[path]") {
         REQUIRE(tester.callback4_invoked == true);
     }
 
+    SECTION("invoking a lambda") {
+        bool callback1_invoked{false};
+        bool callback2_invoked{false};
+        std::size_t number{};
+
+        auto callback1 = [&callback1_invoked]() { callback1_invoked = true; };
+        auto callback2 = [&callback2_invoked, &number](std::size_t input) {
+            callback2_invoked = true;
+            number = input;
+        };
+
+        table.add<&decltype(callback1)::operator()>("/callback/1", &callback1);
+        table.add<&decltype(callback2)::operator()>("/callback/2/{\\d+}",
+                                                    &callback2);
+
+        REQUIRE(callback1_invoked == false);
+        REQUIRE(callback2_invoked == false);
+
+        table.route("/callback/1");
+
+        REQUIRE(callback1_invoked == true);
+        REQUIRE(callback2_invoked == false);
+
+        table.route("/callback/2/5");
+
+        REQUIRE(callback1_invoked == true);
+        REQUIRE(callback2_invoked == true);
+        REQUIRE(number == 5);
+    }
+
     SECTION("invoking a member function with slug") {
         struct slug_data {
             std::size_t number;
