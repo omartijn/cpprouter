@@ -122,7 +122,7 @@ namespace router {
              *  @param  endpoint    The endpoint to route
              *  @param  parameters  The arguments to give to the callback
              *  @return The result of the callback
-             *  @throws std::out_of_range
+             *  @throws std::out_of_range If no matching route and no not_found handler is available
              */
             return_type route(std::string_view endpoint, arguments... parameters) const
             {
@@ -302,7 +302,7 @@ namespace router {
              *  @param  method      The method to proxy to
              *  @param  parameters  The arguments to give to the callback
              *  @return The result of the callback
-             *  @throws std::out_of_range
+             *  @throws std::out_of_range If no matching route or not_found handler is found
              */
             return_type route(std::string_view endpoint, decltype(first) method,  arguments... parameters) const
             {
